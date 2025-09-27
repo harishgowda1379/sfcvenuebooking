@@ -359,7 +359,7 @@ def faculty_book():
             booking = Booking(
                 event_name = data.get("event_name"),
                 faculty_name = session["user"]["username"],
-                num_people = int(data.get("num_people")),
+                num_people = int(data.get("num_people") or 0),
                 venue = data.get("venue"),
                 slot = slot,
                 date = data.get("date"),
@@ -370,12 +370,20 @@ def faculty_book():
             db.session.add(booking)
             booking_list.append(booking)
 
-        db.session.commit()  # IDs are now assigned
+        try:
+            db.session.commit()  # Commit all bookings
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error saving booking: {e}", "danger")
+            return redirect(url_for("faculty_dashboard"))
 
-        # Email notify admin for the first booking
+        # Try sending email, but don’t crash if it fails
         if booking_list:
             first_booking = booking_list[0]
-            send_booking_email_to_admin(first_booking)
+            try:
+                send_booking_email_to_admin(first_booking)
+            except Exception as e:
+                print("[EMAIL ERROR] Failed to send admin email:", e)
 
         booking_ids = [b.id for b in booking_list]
         return redirect(url_for("booking_submitted", booking_id=booking_ids[0]))
