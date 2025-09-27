@@ -1,16 +1,9 @@
-# app.py
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from itsdangerous import URLSafeSerializer, BadSignature
-import os
-import smtplib
+import os, smtplib, imaplib, email, re, threading, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import imaplib
-import email
-import re
-import threading
-import time
-from database import db  # <-- only import db
+from database import db  # <-- import the singleton db
 from models import User, Booking, Venue
 
 app = Flask(__name__)
@@ -20,10 +13,11 @@ app.secret_key = "dev-secret-key"
 instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "instance")
 os.makedirs(instance_path, exist_ok=True)
 
+# DB config
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(instance_path, 'venue_booking.db')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Initialize the already imported db
+# Initialize db with the app
 db.init_app(app)
 # SMTP / Email settings (fill these for real email sending)
 app.config.setdefault("MAIL_SERVER", os.environ.get("MAIL_SERVER", "smtp.gmail.com"))
