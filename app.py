@@ -354,7 +354,8 @@ def faculty_book():
             return redirect(url_for("faculty_dashboard"))
         
         # Create a booking for each selected slot
-        booking_ids = []
+        booking_list = []
+
         for slot in slots:
             booking = Booking(
                 event_name = data.get("event_name"),
@@ -368,18 +369,21 @@ def faculty_book():
                 other_requirements = (data.get("other_requirements") or None)
             )
             db.session.add(booking)
-            booking_ids.append(booking.id)
-        
-        db.session.commit()
-        
-        # Email notify admin with approve/reject links for the first booking
-        if booking_ids:
-            first_booking = Booking.query.get(booking_ids[0])
+            booking_list.append(booking)
+
+        db.session.commit()  # IDs are now assigned
+
+        # Email notify admin for the first booking
+        if booking_list:
+            first_booking = booking_list[0]
             send_booking_email_to_admin(first_booking)
-        
+
+        booking_ids = [b.id for b in booking_list]
         return redirect(url_for("booking_submitted", booking_id=booking_ids[0]))
+
     flash("Access denied", "danger")
     return redirect(url_for("login_faculty"))
+
 
 # Faculty: Submission success page
 @app.route("/faculty/booking_submitted/<int:booking_id>")
