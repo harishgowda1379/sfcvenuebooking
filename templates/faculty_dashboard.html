@@ -522,30 +522,115 @@ textarea:focus {
   color: #d32f2f;
 }
 
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .slot-checkbox {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  button, .nav-link, .cal-nav button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, select, textarea {
+    min-height: 44px;
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .container {
     padding: 0 15px;
+    margin: 20px auto;
   }
   
   .card {
     padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
   }
   
   .booking-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 15px;
   }
   
+  .nav-link {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+  
+  /* Calendar responsive */
   .cal-grid {
     grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
+    gap: 4px;
   }
   
   .cal-day {
-    padding: 8px 5px;
+    padding: 6px 4px;
+    font-size: 0.8rem;
+    min-height: 35px;
+  }
+  
+  .cal-weekday {
+    font-size: 0.8rem;
+    padding: 8px 0;
+  }
+  
+  .cal-title {
+    font-size: 1.1rem;
+  }
+  
+  .cal-nav button {
+    padding: 6px 10px;
     font-size: 0.9rem;
-    min-height: 40px;
+  }
+  
+  /* Slots responsive */
+  .slot-checkbox {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+  
+  .slot-checkbox::before {
+    font-size: 10px;
+    top: 1px;
+    right: 1px;
+  }
+  
+  .slot-checkbox::after {
+    width: 6px;
+    height: 6px;
+    top: 2px;
+    right: 2px;
+  }
+  
+  /* Form responsive */
+  input, select, textarea {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  /* Status legend responsive */
+  .status-legend {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
   }
   
   header {
@@ -554,9 +639,113 @@ textarea:focus {
     padding: 15px 5%;
   }
   
+  .header-title {
+    font-size: 1.3rem;
+  }
+  
   .user-nav {
     justify-content: center;
     flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .user-nav a {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 10px;
+    margin: 15px auto;
+  }
+  
+  .card {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .title {
+    font-size: 1.3rem;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  /* Calendar mobile */
+  .cal-grid {
+    gap: 2px;
+  }
+  
+  .cal-day {
+    padding: 4px 2px;
+    font-size: 0.7rem;
+    min-height: 30px;
+  }
+  
+  .cal-weekday {
+    font-size: 0.7rem;
+    padding: 6px 0;
+  }
+  
+  .cal-title {
+    font-size: 1rem;
+  }
+  
+  /* Slots mobile */
+  .slot-checkbox {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 4px;
+  }
+  
+  .slot-checkbox input[type="checkbox"] {
+    margin: 0;
+  }
+  
+  /* Form mobile */
+  input, select, textarea {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+  
+  button {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  /* Header mobile */
+  .header-title {
+    font-size: 1.1rem;
+  }
+  
+  .user-nav {
+    gap: 8px;
+  }
+  
+  .user-nav a {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+  
+  /* Modal mobile */
+  .modal {
+    width: 95%;
+    margin: 10px;
+  }
+  
+  .modal-body {
+    padding: 12px;
+  }
+  
+  .modal-row {
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px 0;
   }
 }
 </style>

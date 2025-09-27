@@ -257,32 +257,122 @@
         }
 
         @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+                margin: 20px auto;
+            }
+            
+            .card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
             header {
                 flex-direction: column;
                 gap: 15px;
+                padding: 15px 5%;
             }
+            
             .nav {
                 display: flex;
                 justify-content: center;
                 flex-wrap: wrap;
                 gap: 15px;
             }
+            
             .nav a {
                 margin-left: 0;
+                padding: 6px 12px;
+                font-size: 0.9rem;
             }
+            
             .row {
                 flex-direction: column;
+                gap: 10px;
             }
+            
             .row input {
                 flex: none;
                 width: 100%;
+                padding: 10px 12px;
+                font-size: 0.9rem;
             }
+            
             .row button {
                 flex: none;
                 width: 100%;
+                padding: 10px 12px;
+                font-size: 0.9rem;
             }
+            
             table {
                 font-size: 0.9rem;
+                display: block;
+                overflow-x: auto;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 10px;
+                margin: 15px auto;
+            }
+            
+            .card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .title {
+                font-size: 1.3rem;
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            
+            header {
+                padding: 10px 5%;
+            }
+            
+            .brand-title {
+                font-size: 1.1rem;
+            }
+            
+            .nav {
+                gap: 10px;
+            }
+            
+            .nav a {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+            
+            .row input, .row button {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+            
+            table {
+                font-size: 0.8rem;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+                font-size: 0.75rem;
             }
         }
         

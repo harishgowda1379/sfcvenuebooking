@@ -78,6 +78,109 @@
     .booking-item.pending{border-left-color:var(--warning)}
     .booking-item.approved{border-left-color:var(--success)}
     .booking-item.rejected{border-left-color:var(--error)}
+    
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+      button, .nav-link, .cal-nav button {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      
+      select {
+        min-height: 44px;
+      }
+      
+      .slot-indicator {
+        min-height: 44px;
+        min-width: 44px;
+      }
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container{padding:0 15px;margin:20px auto}
+      .card{padding:20px;margin-bottom:20px}
+      .title{font-size:1.5rem}
+      .subtitle{font-size:1rem}
+      .nav-link{padding:6px 12px;font-size:0.9rem}
+      
+      /* Table responsive */
+      .table-container{overflow-x:auto;margin:0 -15px;padding:0 15px}
+      table{min-width:600px;font-size:0.9rem}
+      th,td{padding:8px 6px;font-size:0.85rem}
+      
+      /* Calendar responsive */
+      .calendar-container{margin:0 -15px;padding:0 15px}
+      .cal-grid{grid-template-columns:repeat(7,1fr);gap:4px}
+      .cal-day{padding:6px 4px;font-size:0.8rem;min-height:35px}
+      .cal-weekday{font-size:0.8rem;padding:8px 0}
+      .cal-title{font-size:1.1rem}
+      .cal-nav button{padding:6px 10px;font-size:0.9rem}
+      
+      /* Slot indicators mobile */
+      .slot-indicator{width:8px;height:8px;font-size:8px}
+      
+      /* Form responsive */
+      select{padding:10px 12px;font-size:0.9rem}
+      button{padding:10px 20px;font-size:0.9rem}
+      
+      /* Modal responsive */
+      .modal{width:95%;margin:10px;max-height:90vh;overflow-y:auto}
+      .modal-body{padding:12px}
+      .modal-row{flex-direction:column;gap:5px;padding:6px 0}
+      
+      /* Header responsive */
+      header{flex-direction:column;gap:15px;padding:15px 5%}
+      .header-title{font-size:1.3rem}
+      .user-nav{justify-content:center;flex-wrap:wrap;gap:10px}
+      .user-nav a{padding:6px 12px;font-size:0.9rem}
+      
+      /* Slot details modal responsive */
+      .slot-details-modal{width:95%;margin:10px;max-height:90vh;overflow-y:auto}
+      .slot-details-header{padding:10px 12px;font-size:0.9rem}
+      .slot-details-body{padding:12px;font-size:0.85rem}
+      .booking-item{padding:10px;margin-bottom:8px}
+    }
+    
+    @media (max-width: 480px) {
+      .container{padding:0 10px;margin:15px auto}
+      .card{padding:15px;margin-bottom:15px}
+      .title{font-size:1.3rem}
+      .subtitle{font-size:0.9rem}
+      
+      /* Table mobile */
+      table{min-width:500px;font-size:0.8rem}
+      th,td{padding:6px 4px;font-size:0.75rem}
+      
+      /* Calendar mobile */
+      .cal-grid{gap:2px}
+      .cal-day{padding:4px 2px;font-size:0.7rem;min-height:30px}
+      .cal-weekday{font-size:0.7rem;padding:6px 0}
+      .cal-title{font-size:1rem}
+      
+      /* Slot indicators mobile */
+      .slot-indicator{width:6px;height:6px;font-size:6px}
+      
+      /* Form mobile */
+      select{padding:8px 10px;font-size:0.8rem}
+      button{padding:8px 16px;font-size:0.8rem}
+      
+      /* Header mobile */
+      .header-title{font-size:1.1rem}
+      .user-nav{gap:8px}
+      .user-nav a{padding:5px 10px;font-size:0.8rem}
+      
+      /* Modal mobile */
+      .modal{width:98%;margin:5px;max-height:95vh}
+      .modal-body{padding:10px}
+      .modal-row{padding:4px 0}
+      
+      /* Slot details modal mobile */
+      .slot-details-modal{width:98%;margin:5px;max-height:95vh}
+      .slot-details-header{padding:8px 10px;font-size:0.8rem}
+      .slot-details-body{padding:10px;font-size:0.8rem}
+      .booking-item{padding:8px;margin-bottom:6px;font-size:0.8rem}
+    }
   </style>
 </head>
 <body>

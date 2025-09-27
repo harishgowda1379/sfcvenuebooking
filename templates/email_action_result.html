@@ -10,6 +10,19 @@
     .ok { color:#155724; background:#d4edda; padding:8px 12px; border-radius:8px; display:inline-block; }
     .err { color:#721c24; background:#f8d7da; padding:8px 12px; border-radius:8px; display:inline-block; }
     a { color:#111; text-decoration:none; font-weight:bold; }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container { margin: 40px 15px; padding: 20px; }
+      .ok, .err { padding: 6px 10px; font-size: 0.9rem; }
+      a { font-size: 0.9rem; }
+    }
+    
+    @media (max-width: 480px) {
+      .container { margin: 20px 10px; padding: 15px; }
+      .ok, .err { padding: 5px 8px; font-size: 0.8rem; }
+      a { font-size: 0.8rem; }
+    }
   </style>
 </head>
 <body>
