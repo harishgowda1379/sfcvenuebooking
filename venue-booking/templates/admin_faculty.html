@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Faculty - College Venue Booking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-dark: #1a237e; /* Dark blue */
+            --primary-medium: #303f9f; /* Medium blue */
+            --primary-light: #7986cb; /* Light blue */
+            --accent-color: #7b1fa2; /* Purple accent */
+            --accent-light: #9c27b0; /* Light purple */
+            --text-dark: #212121;
+            --text-light: #757575;
+            --background: #ffffff;
+            --card-bg: #f8f9fa;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --border-radius: 12px;
+            --success: #4CAF50;
+            --error: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Subtle background pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.03;
+            background-image: 
+                radial-gradient(circle at 10% 20%, var(--primary-dark) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, var(--accent-color) 0%, transparent 20%);
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
+            padding: 16px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-inner {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--accent-color) 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .brand-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: white;
+            letter-spacing: 0.5px;
+        }
+        
+        .nav a {
+            color: white;
+            margin-left: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding: 8px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .nav a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: white;
+            transition: width 0.3s ease;
+        }
+        
+        .nav a:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .nav a:hover::after {
+            width: 100%;
+        }
+
+        .nav button {
+            color: white;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 25px;
+        }
+
+        .nav button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        main {
+            flex: 1;
+            padding: 40px 5%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .card {
+            background: var(--background);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-medium), var(--accent-color));
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .row input {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .row input:focus {
+            outline: 2px solid var(--primary-light);
+            border-color: transparent;
+        }
+        
+        .row button {
+            padding: 12px 15px;
+            background: linear-gradient(90deg, var(--primary-medium), var(--accent-color));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(123, 31, 162, 0.2);
+            white-space: nowrap;
+        }
+        
+        .row button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(123, 31, 162, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: var(--card-bg);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .inline {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .inline input {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+        }
+
+        .inline button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .inline button:hover {
+            background: #45a049;
+        }
+
+        .inline .delete-btn {
+            background: var(--error);
+        }
+
+        .inline .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px 20px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            background: var(--background);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .nav {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            .nav a, .nav button {
+                margin-left: 0;
+            }
+            .row {
+                flex-direction: column;
+            }
+            .row input, .row button {
+                flex: none;
+                width: 100%;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+            .inline {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .inline button {
+                width: 100%;
+            }
+            td {
+                word-wrap: break-word;
+                word-break: break-all;
+            }
+        }
+        .brand-title {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <header>
+        <div class="brand">
+           <div class="logo">
+  <img src="{{ url_for('static', filename='images/college_logo.png') }}" alt="Logo" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+</div>
+            <div class="brand-text">Manage Faculty</div>
+        </div>
+        <nav class="nav">
+            <a href="/admin">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="card">
+                <h2>Add Faculty User</h2>
+                <form class="row" method="POST" action="/admin/faculty/add">
+                    <input name="username" placeholder="Username" required>
+                    <input name="password" type="text" placeholder="Initial Password" required>
+                    <button type="submit">
+                        <i class="fa fa-user-plus"></i>&nbsp;Add Faculty
+                    </button>
+                </form>
+
+                <h2 style="margin-top: 40px;">Existing Faculty</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in faculty_users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.username }}</td>
+                            <td>
+                                <div class="inline">
+                                    <form method="POST" action="/admin/faculty/reset/{{ u.id }}">
+                                        <input name="new_password" placeholder="New password" required>
+                                        <button><i class="fa fa-key"></i>&nbsp;Reset</button>
+                                    </form>
+                                    <form method="POST" action="/admin/faculty/delete/{{ u.id }}">
+                                        <button class="delete-btn" onclick="return confirm('Delete faculty {{ u.username }}?')">
+                                            <i class="fa fa-trash"></i>&nbsp;Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align:center; color: var(--text-light);">No faculty users found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        © SFC College Venue Booking System. All rights reserved.
+    </footer>
+
+</body>
+</html>
