@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, get_flashed_messages
 from itsdangerous import URLSafeSerializer, BadSignature
 import os, smtplib, imaplib, email, re, threading, time
 from email.mime.text import MIMEText
@@ -226,11 +226,18 @@ def home():
 # Login selection
 @app.route("/login")
 def login():
+    # Clear any existing flash messages when visiting the page
+    get_flashed_messages()
     return render_template("login.html", title="Login")
 
 # Admin login
 @app.route("/login/admin", methods=["GET", "POST"])
 def login_admin():
+    # Clear any existing flash messages when visiting the page
+    if request.method == "GET":
+        # Clear flash messages by consuming them
+        get_flashed_messages()
+    
     if request.method == "POST":
         username = request.form.get("username").strip()
         password = request.form.get("password").strip()
@@ -246,6 +253,11 @@ def login_admin():
 # Faculty login
 @app.route("/login/faculty", methods=["GET", "POST"])
 def login_faculty():
+    # Clear any existing flash messages when visiting the page
+    if request.method == "GET":
+        # Clear flash messages by consuming them
+        get_flashed_messages()
+    
     if request.method == "POST":
         username = request.form.get("username").strip()
         password = request.form.get("password").strip()
@@ -280,6 +292,7 @@ def admin_dashboard():
                 event_name=booking.event_name
             ).order_by(Booking.slot.asc()).all()
             
+            
             # Create grouped booking object
             grouped_booking = {
                 'primary_id': booking.id,
@@ -307,7 +320,46 @@ def admin_dashboard():
             "venues": Venue.query.count(),
             "faculty": User.query.filter_by(role="faculty").count(),
         }
-        return render_template("admin_dashboard.html", title="Admin Dashboard", grouped_bookings=grouped_bookings, stats=stats)
+        venues = [v.name for v in Venue.query.order_by(Venue.name.asc()).all()]
+        return render_template("admin_dashboard.html", title="Admin Dashboard", grouped_bookings=grouped_bookings, stats=stats, venues=venues)
+    flash("Access denied", "danger")
+    return redirect(url_for("login"))
+
+# Admin: Get detailed slot information for calendar
+@app.route("/admin/slot_details", methods=["POST"])
+def admin_slot_details():
+    if session.get("user") and session["user"]["role"] == "admin":
+        venue = request.form.get("venue")
+        date = request.form.get("date")
+        if not venue or not date:
+            return jsonify({"booked": [], "pending": []})
+        
+        bookings = Booking.query.filter_by(venue=venue, date=date).all()
+        
+        # Separate approved and pending bookings with full details
+        booked_bookings = []
+        pending_bookings = []
+        
+        for booking in bookings:
+            booking_data = {
+                'id': booking.id,
+                'slot': booking.slot,
+                'event_name': booking.event_name,
+                'faculty_name': booking.faculty_name,
+                'num_people': booking.num_people,
+                'canteen_details': booking.canteen_details,
+                'status': booking.status
+            }
+            
+            if booking.status == "Approved":
+                booked_bookings.append(booking_data)
+            elif booking.status == "Pending":
+                pending_bookings.append(booking_data)
+        
+        return jsonify({
+            "booked": booked_bookings,
+            "pending": pending_bookings
+        })
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
@@ -329,17 +381,33 @@ def booked_slots():
     if not venue or not date:
         return jsonify({"booked": [], "pending": []})
     
+    # 1. Fetch ALL relevant bookings
     bookings = Booking.query.filter_by(venue=venue, date=date).all()
     
-    # Separate approved and pending slots
-    booked_slots = [b.slot for b in bookings if b.status == "Approved"]
-    pending_slots = [b.slot for b in bookings if b.status == "Pending"]
+    # 2. Separate approved and pending slots using case-insensitive or explicit checks
+    
+    # Check for APPROVED status (Handles 'Approved', 'approved', 'APPROVED')
+    booked_slots = [
+        b.slot for b in bookings 
+        if b.status.lower() == "approved"
+    ]
+    
+    # Check for PENDING status (Uses the exact status set during submission)
+    pending_slots = [
+        b.slot for b in bookings 
+        if b.status == "Pending"
+    ]
+    
+    # Ensure you also check for other statuses that should block booking, 
+    # such as 'CONFIRMED' if that is used. If so, add it to the booked_slots list:
+    # booked_slots.extend([b.slot for b in bookings if b.status.lower() == "confirmed"])
+
+    print(f"DEBUG: Booked Slots: {booked_slots}, Pending Slots: {pending_slots}")
     
     return jsonify({
         "booked": booked_slots,
         "pending": pending_slots
-    })
-
+    }) 
 # Submit new booking
 @app.route("/faculty/book", methods=["POST"])
 def faculty_book():
@@ -432,9 +500,24 @@ def faculty_cancel_booking(booking_id):
 def admin_approve(booking_id):
     if session.get("user") and session["user"]["role"] == "admin":
         booking = Booking.query.get_or_404(booking_id)
-        booking.status = "Approved"
+        
+        # Find all related bookings (same faculty, venue, date, event_name)
+        related_bookings = Booking.query.filter_by(
+            faculty_name=booking.faculty_name,
+            venue=booking.venue,
+            date=booking.date,
+            event_name=booking.event_name,
+            status="Pending"
+        ).all()
+        
+        # Approve all related bookings
+        for related_booking in related_bookings:
+            related_booking.status = "Approved"
+        
         db.session.commit()
-        flash("Booking approved", "success")
+        
+        slots_text = ", ".join([b.slot for b in related_bookings])
+        flash(f"Booking approved for slots: {slots_text}", "success")
         return redirect(url_for("admin_dashboard"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
@@ -443,9 +526,24 @@ def admin_approve(booking_id):
 def admin_reject(booking_id):
     if session.get("user") and session["user"]["role"] == "admin":
         booking = Booking.query.get_or_404(booking_id)
-        booking.status = "Rejected"
+        
+        # Find all related bookings (same faculty, venue, date, event_name)
+        related_bookings = Booking.query.filter_by(
+            faculty_name=booking.faculty_name,
+            venue=booking.venue,
+            date=booking.date,
+            event_name=booking.event_name,
+            status="Pending"
+        ).all()
+        
+        # Reject all related bookings
+        for related_booking in related_bookings:
+            related_booking.status = "Rejected"
+        
         db.session.commit()
-        flash("Booking rejected", "info")
+        
+        slots_text = ", ".join([b.slot for b in related_bookings])
+        flash(f"Booking rejected for slots: {slots_text}", "info")
         return redirect(url_for("admin_dashboard"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))

@@ -280,6 +280,17 @@ button:disabled {
 .slot-checkbox.available {
   border-color: var(--success);
   background: rgba(76, 175, 80, 0.1);
+  position: relative;
+}
+
+.slot-checkbox.available::before {
+  content: '✓';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: var(--success);
+  font-weight: bold;
+  font-size: 12px;
 }
 
 .slot-checkbox.available:hover {
@@ -290,27 +301,60 @@ button:disabled {
 /* Booked slots - Red */
 .slot-checkbox.booked {
   border-color: var(--error);
-  background: rgba(244, 67, 54, 0.1);
+  background: rgba(244, 67, 54, 0.2);
   opacity: 0.7;
   cursor: not-allowed;
+  pointer-events: none;
+  position: relative;
+}
+
+.slot-checkbox.booked::before {
+  content: '✗';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: var(--error);
+  font-weight: bold;
+  font-size: 12px;
 }
 
 .slot-checkbox.booked:hover {
   border-color: #d32f2f;
-  background: rgba(244, 67, 54, 0.15);
+  background: rgba(244, 67, 54, 0.25);
+}
+
+.slot-checkbox.booked input[type="checkbox"] {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* Pending slots - Yellow */
 .slot-checkbox.pending {
   border-color: var(--warning);
-  background: rgba(255, 152, 0, 0.1);
+  background: rgba(255, 152, 0, 0.2);
   opacity: 0.8;
   cursor: not-allowed;
+  pointer-events: none;
+  position: relative;
+}
+
+.slot-checkbox.pending::before {
+  content: '⏳';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: var(--warning);
+  font-size: 10px;
 }
 
 .slot-checkbox.pending:hover {
   border-color: #e68900;
-  background: rgba(255, 152, 0, 0.15);
+  background: rgba(255, 152, 0, 0.25);
+}
+
+.slot-checkbox.pending input[type="checkbox"] {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* Status indicators */
@@ -562,16 +606,22 @@ textarea:focus {
         <!-- Status Legend -->
         <div style="display: flex; gap: 20px; margin-bottom: 15px; padding: 10px; background: rgba(121, 134, 203, 0.05); border-radius: 8px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--success);"></div>
-                <span style="font-size: 0.9rem; color: var(--text-dark);">Available</span>
+                <div style="width: 20px; height: 20px; border: 2px solid var(--success); border-radius: 4px; background: rgba(76, 175, 80, 0.1); position: relative;">
+                    <span style="position: absolute; top: 1px; right: 1px; color: var(--success); font-size: 10px; font-weight: bold;">✓</span>
+                </div>
+                <span style="font-size: 0.9rem; color: var(--text-dark);">Available (Clickable)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--warning);"></div>
-                <span style="font-size: 0.9rem; color: var(--text-dark);">Pending Approval</span>
+                <div style="width: 20px; height: 20px; border: 2px solid var(--warning); border-radius: 4px; background: rgba(255, 152, 0, 0.2); position: relative;">
+                    <span style="position: absolute; top: 1px; right: 1px; color: var(--warning); font-size: 8px;">⏳</span>
+                </div>
+                <span style="font-size: 0.9rem; color: var(--text-dark);">Pending Approval (Disabled)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 12px; height: 12px; border-radius: 50%; background: var(--error);"></div>
-                <span style="font-size: 0.9rem; color: var(--text-dark);">Booked</span>
+                <div style="width: 20px; height: 20px; border: 2px solid var(--error); border-radius: 4px; background: rgba(244, 67, 54, 0.2); position: relative;">
+                    <span style="position: absolute; top: 1px; right: 1px; color: var(--error); font-size: 10px; font-weight: bold;">✗</span>
+                </div>
+                <span style="font-size: 0.9rem; color: var(--text-dark);">Booked (Disabled)</span>
             </div>
         </div>
         
@@ -614,8 +664,6 @@ textarea:focus {
 </div>
 
 <script>
-
-
 const classSlots = [
     "8:30-9:30",
     "9:30-10:30",
@@ -645,6 +693,8 @@ function updateSelectedSlots() {
         .map(checkbox => checkbox.value);
     
     formSlots.value = selectedSlots.join(',');
+    formVenue.value = venueSelect.value; // Set the venue value
+    formDate.value = selectedDate; // Set the date value
     
     if (selectedSlots.length > 0) {
         selectedSlotsInfo.textContent = selectedSlots.join(', ');
@@ -671,23 +721,23 @@ canteenCheckbox.addEventListener('change', function() {
 async function loadSlots() {
     const venue = venueSelect.value;
     const date = selectedDate;
-    
-    if(!venue || !date) {
+
+    if (!venue || !date) {
         slotsContainer.innerHTML = '<div class="status-message status-info">Please select a venue and a date to view available slots.</div>';
         selectedSlotsContainer.style.display = 'none';
         bookingForm.style.display = 'none';
         return;
     }
 
-    // Show loading state
     slotsContainer.innerHTML = '<div class="status-message status-info">Loading available slots...</div>';
 
     const formData = new FormData();
     formData.append('venue', venue);
     formData.append('date', date);
+
     let bookedSlots = [];
     let pendingSlots = [];
-    
+
     try {
         const resp = await fetch('/faculty/booked_slots', { method: 'POST', body: formData });
         if (resp.ok) {
@@ -695,95 +745,104 @@ async function loadSlots() {
             bookedSlots = data.booked || [];
             pendingSlots = data.pending || [];
         } else {
-            console.warn('Failed to load booked slots', resp.status);
             slotsContainer.innerHTML = '<div class="status-message status-error">Failed to load slot availability. Please try again.</div>';
             return;
         }
     } catch (e) {
-        console.error('Error fetching booked slots', e);
         slotsContainer.innerHTML = '<div class="status-message status-error">Network error. Please check your connection and try again.</div>';
         return;
     }
 
+    // Clear previous slots
     slotsContainer.innerHTML = "";
     let availableCount = 0;
-    
+
     classSlots.forEach(slot => {
         const isBooked = bookedSlots.includes(slot);
         const isPending = pendingSlots.includes(slot);
-        
-        // Create checkbox container
+        const isUnavailable = isBooked || isPending; // Combined status for easier disabling
+
         const slotContainer = document.createElement("div");
         slotContainer.className = "slot-checkbox";
-        
-        // Apply status classes and colors
-        if (isBooked) {
-            slotContainer.classList.add("booked");
-        } else if (isPending) {
-            slotContainer.classList.add("pending");
-        } else {
-            slotContainer.classList.add("available");
-        }
-        
-        // Create checkbox
+
+        if (isBooked) slotContainer.classList.add("booked");
+        else if (isPending) slotContainer.classList.add("pending");
+        else slotContainer.classList.add("available");
+
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.value = slot;
         checkbox.id = `slot-${slot.replace(/[:\-]/g, '')}`;
-        checkbox.disabled = isBooked || isPending;
+        checkbox.disabled = isUnavailable; // THIS correctly disables the checkbox
+
+        // Create an element for the text content
+        const slotText = document.createElement("span"); 
+        slotText.textContent = slot;
         
-        // Create label
-        const label = document.createElement("label");
-        label.htmlFor = checkbox.id;
-        label.textContent = slot;
+        // Use the span instead of <label> for better control inside the flex container
+        // If you must use <label>, then change slotText back to label, but the logic below is the key fix
+
         if (isBooked) {
-            label.textContent += " (Booked)";
-            label.style.color = "var(--error)";
+            slotText.textContent += " (Booked)";
+            slotText.style.color = "var(--error)";
+            slotText.style.fontWeight = "600";
         } else if (isPending) {
-            label.textContent += " (Pending)";
-            label.style.color = "var(--warning)";
+            slotText.textContent += " (Pending)";
+            slotText.style.color = "var(--warning)";
+            slotText.style.fontWeight = "600";
         } else {
-            label.style.color = "var(--success)";
-            label.style.fontWeight = "600";
+            slotText.style.color = "var(--success)";
+            slotText.style.fontWeight = "600";
         }
-        
+
         slotContainer.appendChild(checkbox);
-        slotContainer.appendChild(label);
-        
-        if (!isBooked && !isPending) {
+        slotContainer.appendChild(slotText); // Append span element
+
+        // Only attach listeners to available slots
+        if (!isUnavailable) {
             availableCount++;
-            checkbox.addEventListener("change", updateSelectedSlots);
+
+            // Add listener to the WHOLE container for better UX
+            slotContainer.addEventListener('click', (e) => {
+                // Prevent toggling if the click was already on the checkbox itself to avoid double-toggle
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                slotContainer.classList.toggle('selected', checkbox.checked);
+                updateSelectedSlots();
+            });
+
+            // Add listener to the checkbox to handle direct clicks on it
+            checkbox.addEventListener("change", (e) => {
+                slotContainer.classList.toggle('selected', e.target.checked);
+                updateSelectedSlots();
+            });
+        } else {
+            // For disabled slots, add a visual indicator and prevent interaction
+            slotContainer.style.pointerEvents = 'none';
+            slotContainer.title = isBooked ? 'This slot is already booked' : 'This slot is pending approval';
         }
-        
+
         slotsContainer.appendChild(slotContainer);
     });
-    
+
     if (availableCount === 0) {
         slotsContainer.innerHTML = '<div class="status-message status-info">No available slots for the selected date. Please choose another date.</div>';
     }
-    
-    // Reset form when slots change
+
+    // Reset selection
     selectedSlots = [];
     updateSelectedSlots();
 }
-
 venueSelect.addEventListener("change", loadSlots);
 
-
-
-// Calendar rendering
+// Calendar
 const calendarEl = document.getElementById('calendar');
 const selectedDateLabel = document.getElementById('selected-date');
 const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function pad2(n){ return n < 10 ? '0'+n : ''+n; }
-
-function formatDateYmd(d){
-    const y = d.getFullYear();
-    const m = pad2(d.getMonth()+1);
-    const day = pad2(d.getDate());
-    return `${y}-${m}-${day}`;
-}
+function formatDateYmd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
 function buildCalendarHeader(state){
     const header = document.createElement('div');
@@ -792,32 +851,21 @@ function buildCalendarHeader(state){
     const prev = document.createElement('button');
     prev.textContent = '‹';
     prev.className = 'cal-nav-prev';
-    prev.onclick = () => {
-        state.month -= 1;
-        if(state.month < 0){ state.month = 11; state.year -= 1; }
-        renderCalendar(state);
-    };
-
-    const title = document.createElement('div');
-    title.textContent = `${monthNames[state.month]} ${state.year}`;
-    title.className = 'cal-title';
+    prev.onclick = () => { state.month--; if(state.month < 0){ state.month=11; state.year--; } renderCalendar(state); };
 
     const next = document.createElement('button');
     next.textContent = '›';
     next.className = 'cal-nav-next';
-    next.onclick = () => {
-        state.month += 1;
-        if(state.month > 11){ state.month = 0; state.year += 1; }
-        renderCalendar(state);
-    };
+    next.onclick = () => { state.month++; if(state.month>11){ state.month=0; state.year++; } renderCalendar(state); };
 
-    const navContainer = document.createElement('div');
-    navContainer.className = 'cal-nav';
-    navContainer.appendChild(prev);
-    navContainer.appendChild(next);
+    const title = document.createElement('div');
+    title.className = 'cal-title';
+    title.textContent = `${monthNames[state.month]} ${state.year}`;
 
-    header.appendChild(title);
-    header.appendChild(navContainer);
+    const nav = document.createElement('div'); nav.className='cal-nav';
+    nav.appendChild(prev); nav.appendChild(next);
+
+    header.appendChild(title); header.appendChild(nav);
     return header;
 }
 
@@ -825,69 +873,62 @@ function buildCalendarGrid(state){
     const grid = document.createElement('div');
     grid.className = 'cal-grid';
 
-    const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    weekdays.forEach(w => {
-        const el = document.createElement('div');
-        el.textContent = w;
-        el.className = 'cal-weekday';
-        grid.appendChild(el);
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(w=>{
+        const wd = document.createElement('div');
+        wd.className='cal-weekday'; wd.textContent=w; grid.appendChild(wd);
     });
 
     const firstDay = new Date(state.year, state.month, 1);
     const startDow = firstDay.getDay();
     const daysInMonth = new Date(state.year, state.month+1, 0).getDate();
 
-    for(let i=0;i<startDow;i++){
-        const empty = document.createElement('div');
-        empty.className = 'cal-day empty';
-        grid.appendChild(empty);
-    }
+    for(let i=0;i<startDow;i++){ const empty = document.createElement('div'); empty.className='cal-day empty'; grid.appendChild(empty); }
 
     const todayYmd = formatDateYmd(new Date());
-    for(let d=1; d<=daysInMonth; d++){
+    for(let d=1;d<=daysInMonth;d++){
         const cell = document.createElement('button');
-        cell.textContent = d;
-        cell.className = 'cal-day';
+        cell.className='cal-day'; cell.textContent=d;
         const thisDate = new Date(state.year, state.month, d);
         const ymd = formatDateYmd(thisDate);
 
-        if(ymd === todayYmd){ cell.classList.add('today'); }
-        if(selectedDate === ymd){ cell.classList.add('selected'); }
+        if(ymd===todayYmd) cell.classList.add('today');
+        if(selectedDate===ymd) cell.classList.add('selected');
 
-        cell.onclick = () => {
-            selectedDate = ymd;
-            formDate.value = ymd;
+        cell.onclick=()=>{
+            selectedDate=ymd;
+            formDate.value=ymd;
+            selectedDateLabel.textContent=`Selected date: ${ymd}`;
             renderCalendar(state);
             loadSlots();
-            selectedDateLabel.textContent = `Selected date: ${ymd}`;
         };
+
         grid.appendChild(cell);
     }
     return grid;
 }
 
 function renderCalendar(state){
-    calendarEl.innerHTML = '';
+    calendarEl.innerHTML='';
     calendarEl.appendChild(buildCalendarHeader(state));
     calendarEl.appendChild(buildCalendarGrid(state));
 }
 
-// Initialize calendar to current month
+// Initialize
 const now = new Date();
 const calendarState = { year: now.getFullYear(), month: now.getMonth() };
 renderCalendar(calendarState);
 
-// Set today as default selected date
 selectedDate = formatDateYmd(now);
 formDate.value = selectedDate;
 selectedDateLabel.textContent = `Selected date: ${selectedDate}`;
-
-// If the user hasn't picked a venue, auto-select the first actual option
-if (venueSelect && venueSelect.options && venueSelect.options.length > 1 && !venueSelect.value) {
-    venueSelect.selectedIndex = 1; // first non-placeholder
+  
+// Auto-select first venue
+if(venueSelect && venueSelect.options.length>1 && !venueSelect.value){
+    venueSelect.selectedIndex=1;
     loadSlots();
 }
 </script>
+
 
 </body>
 </html>
