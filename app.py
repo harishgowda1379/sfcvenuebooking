@@ -10,24 +10,21 @@ import email
 import re
 import threading
 import time
-from database import db
-from models import User, Booking, Venue 
-from flask_sqlalchemy import SQLAlchemy
+from database import db  # <-- only import db
+from models import User, Booking, Venue
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key"
 
-# Ensure the instance folder exists
+# Ensure instance folder exists
 instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "instance")
-if not os.path.exists(instance_path):
-    os.makedirs(instance_path)
+os.makedirs(instance_path, exist_ok=True)
 
-# SQLite DB path inside the instance folder
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(instance_path, 'venue_booking.db')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
-
+# Initialize the already imported db
+db.init_app(app)
 # SMTP / Email settings (fill these for real email sending)
 app.config.setdefault("MAIL_SERVER", os.environ.get("MAIL_SERVER", "smtp.gmail.com"))
 app.config.setdefault("MAIL_PORT", int(os.environ.get("MAIL_PORT", 587)))
