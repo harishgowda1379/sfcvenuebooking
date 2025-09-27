@@ -12,6 +12,7 @@ import threading
 import time
 from database import db
 from models import User, Booking, Venue 
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key"
