@@ -15,7 +15,8 @@ from models import User, Booking, Venue
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///venue_booking.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///./instance/venue_booking.db"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # SMTP / Email settings (fill these for real email sending)
