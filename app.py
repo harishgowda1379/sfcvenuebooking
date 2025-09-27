@@ -377,20 +377,16 @@ def faculty_book():
             flash(f"Error saving booking: {e}", "danger")
             return redirect(url_for("faculty_dashboard"))
 
-        # Try sending email, but don’t crash if it fails
+        # Send email in background thread to prevent blocking Render worker
         if booking_list:
             first_booking = booking_list[0]
-            try:
-                send_booking_email_to_admin(first_booking)
-            except Exception as e:
-                print("[EMAIL ERROR] Failed to send admin email:", e)
+            threading.Thread(target=send_booking_email_to_admin, args=(first_booking,), daemon=True).start()
 
         booking_ids = [b.id for b in booking_list]
         return redirect(url_for("booking_submitted", booking_id=booking_ids[0]))
 
     flash("Access denied", "danger")
     return redirect(url_for("login_faculty"))
-
 
 # Faculty: Submission success page
 @app.route("/faculty/booking_submitted/<int:booking_id>")
