@@ -187,8 +187,6 @@ def start_imap_background_worker():
     t = threading.Thread(target=loop, daemon=True)
     t.start()
 
-db.init_app(app)
-
 # Initialize DB and create default admin
 # Initialize DB and create default users
 with app.app_context():
