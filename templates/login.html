@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Selection - College Venue Booking System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --primary-dark: #1a237e; /* Dark blue */
+      --primary-medium: #303f9f; /* Medium blue */
+      --primary-light: #7986cb; /* Light blue */
+      --accent-color: #7b1fa2; /* Purple accent */
+      --accent-light: #9c27b0; /* Light purple */
+      --text-dark: #212121;
+      --text-light: #757575;
+      --background: #ffffff;
+      --card-bg: #f8f9fa;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --border-radius: 12px;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--text-dark);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Subtle background pattern */
+    .bg-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.03;
+      background-image: 
+        radial-gradient(circle at 10% 20%, var(--primary-dark) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, var(--accent-color) 0%, transparent 20%);
+    }
+    
+    .app-header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-medium) 100%);
+      padding: 16px 5%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .logo-inner {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--primary-medium) 0%, var(--accent-color) 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 14px;
+    }
+    
+    .brand-text {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+    
+    .nav a {
+      color: white;
+      margin-left: 25px;
+      text-decoration: none;
+      font-weight: 500;
+      position: relative;
+      padding: 8px 0;
+      transition: all 0.3s ease;
+    }
+    
+    .nav a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: 0;
+      left: 0;
+      background: white;
+      transition: width 0.3s ease;
+    }
+    
+    .nav a:hover {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .nav a:hover::after {
+      width: 100%;
+    }
+    
+    .page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px 60px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    }
+    
+    .card {
+      background: var(--background);
+      border-radius: var(--border-radius);
+      padding: 50px 40px;
+      text-align: center;
+      width: 100%;
+      max-width: 700px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .title {
+      font-size: 2.2rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--primary-dark);
+    }
+    
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-light);
+      margin-bottom: 40px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-top: 20px;
+    }
+    
+    .login-option {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 35px 25px;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-option::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-medium), var(--accent-color));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    
+    .login-option:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .login-option:hover::before {
+      transform: scaleX(1);
+    }
+    
+    .login-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--accent-light) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    
+    .login-option:hover .login-icon {
+      transform: scale(1.05);
+    }
+    
+    .login-content {
+      flex: 1;
+    }
+    
+    .login-option h3 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+    
+    .login-option p {
+      color: var(--text-light);
+      line-height: 1.6;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    
+    .login-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 30px;
+      background: linear-gradient(90deg, var(--primary-medium), var(--accent-color));
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(123, 31, 162, 0.3);
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(123, 31, 162, 0.4);
+    }
+    
+    .login-btn i {
+      transition: transform 0.3s ease;
+    }
+    
+    .login-btn:hover i {
+      transform: translateX(5px);
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 25px 20px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      background: var(--background);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .title {
+        font-size: 1.8rem;
+      }
+      
+      .app-header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .brand-text {
+        font-size: 1.2rem;
+      }
+      
+      .nav {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      
+      .nav a {
+        margin-left: 0;
+      }
+      
+      .card {
+        padding: 40px 25px;
+      }
+      
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .title {
+        font-size: 1.6rem;
+      }
+      
+      .card {
+        padding: 30px 20px;
+      }
+      
+      .login-option {
+        padding: 25px 20px;
+      }
+      
+      .login-icon {
+        width: 70px;
+        height: 70px;
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Subtle background pattern -->
+  <div class="bg-pattern"></div>
+
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo">
+  <img src="{{ url_for('static', filename='images/college_logo.png') }}" alt="Logo" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+</div>
+
+      <div class="brand-text">SFC College Venue Booking System</div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('home') }}">Home</a>
+      {% if session.get('user') %}
+        {% if session['user']['role'] == 'admin' %}
+          <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        {% elif session['user']['role'] == 'faculty' %}
+          <a href="{{ url_for('faculty_dashboard') }}">Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="card">
+      <h1 class="title">Select Login Type</h1>
+      <p class="subtitle">Choose your role to access the venue booking system with appropriate permissions</p>
+      
+      <div class="grid">
+        <a href="{{ url_for('login_admin') }}" class="login-option">
+          <div class="login-icon">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div class="login-content">
+            <h3>Administrator Login</h3>
+            <p>Access administrative functions to manage venues, oversee all bookings, and generate system reports.</p>
+          </div>
+          <span class="login-btn">Login as Administrator <i class="fas fa-arrow-right"></i></span>
+        </a>
+        
+        <a href="{{ url_for('login_faculty') }}" class="login-option">
+          <div class="login-icon">
+            <i class="fas fa-chalkboard-teacher"></i>
+          </div>
+          <div class="login-content">
+            <h3>Faculty Login</h3>
+            <p>Book venues for academic activities including classes, seminars, and department events.</p>
+          </div>
+          <span class="login-btn">Login as Faculty <i class="fas fa-arrow-right"></i></span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    © SFC College Venue Booking System. All rights reserved.
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add subtle interaction effects
+      const loginOptions = document.querySelectorAll('.login-option');
+      
+      loginOptions.forEach(option => {
+        option.addEventListener('mouseenter', function() {
+          const icon = this.querySelector('.login-icon');
+          icon.style.transform = 'scale(1.05)';
+        });
+        
+        option.addEventListener('mouseleave', function() {
+          const icon = this.querySelector('.login-icon');
+          icon.style.transform = 'scale(1)';
+        });
+      });
+      
+      // Add a subtle fade-in animation for page elements
+      const card = document.querySelector('.card');
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 100);
+    });
+  </script>
+</body>
+</html>
