@@ -574,6 +574,6 @@ def logout():
 
 
 if __name__ == "__main__":
-    # Start background email reply processor
-    start_imap_background_worker()
+    # Do NOT start the IMAP background worker on Render
+    # start_imap_background_worker()
     app.run(host="0.0.0.0", port=5000, debug=True)
