@@ -854,12 +854,12 @@ textarea:focus {
 
 <script>
 const classSlots = [
-    "8:30-9:30",
-    "9:30-10:30",
-    "10:50-11:50",
-    "11:50-12:50",
-    "1:30-2:30",
-    "2:30-3:30"
+    "8:30-9:30",
+    "9:30-10:30",
+    "10:50-11:50",
+    "11:50-12:50",
+    "1:30-2:30",
+    "2:30-3:30"
 ];
 const venueSelect = document.getElementById("venue");
 
@@ -878,150 +878,150 @@ const canteenDetails = document.getElementById("canteen-details");
 
 // Track selected slots
 function updateSelectedSlots() {
-    selectedSlots = Array.from(document.querySelectorAll('#slots input[type="checkbox"]:checked'))
-        .map(checkbox => checkbox.value);
-    
-    formSlots.value = selectedSlots.join(',');
-    formVenue.value = venueSelect.value; // Set the venue value
-    formDate.value = selectedDate; // Set the date value
-    
-    if (selectedSlots.length > 0) {
-        selectedSlotsInfo.textContent = selectedSlots.join(', ');
-        selectedSlotsContainer.style.display = 'block';
-        bookingForm.style.display = "block";
-        submitBtn.disabled = false;
-    } else {
-        selectedSlotsContainer.style.display = 'none';
-        bookingForm.style.display = "none";
-        submitBtn.disabled = true;
-    }
+    selectedSlots = Array.from(document.querySelectorAll('#slots input[type="checkbox"]:checked'))
+        .map(checkbox => checkbox.value);
+    
+    formSlots.value = selectedSlots.join(',');
+    formVenue.value = venueSelect.value; // Set the venue value
+    formDate.value = selectedDate; // Set the date value
+    
+    if (selectedSlots.length > 0) {
+        selectedSlotsInfo.textContent = selectedSlots.join(', ');
+        selectedSlotsContainer.style.display = 'block';
+        bookingForm.style.display = "block";
+        submitBtn.disabled = false;
+    } else {
+        selectedSlotsContainer.style.display = 'none';
+        bookingForm.style.display = "none";
+        submitBtn.disabled = true;
+    }
 }
 
 // Canteen checkbox handler
 canteenCheckbox.addEventListener('change', function() {
-    if (this.checked) {
-        canteenDetails.style.display = 'block';
-    } else {
-        canteenDetails.style.display = 'none';
-        document.getElementById('canteen-details-text').value = '';
-    }
+    if (this.checked) {
+        canteenDetails.style.display = 'block';
+    } else {
+        canteenDetails.style.display = 'none';
+        document.getElementById('canteen-details-text').value = '';
+    }
 });
 
 async function loadSlots() {
-    const venue = venueSelect.value;
-    const date = selectedDate;
+    const venue = venueSelect.value;
+    const date = selectedDate;
 
-    if (!venue || !date) {
-        slotsContainer.innerHTML = '<div class="status-message status-info">Please select a venue and a date to view available slots.</div>';
-        selectedSlotsContainer.style.display = 'none';
-        bookingForm.style.display = 'none';
-        return;
-    }
+    if (!venue || !date) {
+        slotsContainer.innerHTML = '<div class="status-message status-info">Please select a venue and a date to view available slots.</div>';
+        selectedSlotsContainer.style.display = 'none';
+        bookingForm.style.display = 'none';
+        return;
+    }
 
-    slotsContainer.innerHTML = '<div class="status-message status-info">Loading available slots...</div>';
+    slotsContainer.innerHTML = '<div class="status-message status-info">Loading available slots...</div>';
 
-    const formData = new FormData();
-    formData.append('venue', venue);
-    formData.append('date', date);
+    const formData = new FormData();
+    formData.append('venue', venue);
+    formData.append('date', date);
 
-    let bookedSlots = [];
-    let pendingSlots = [];
+    let bookedSlots = [];
+    let pendingSlots = [];
 
-    try {
-        const resp = await fetch('/faculty/booked_slots', { method: 'POST', body: formData });
-        if (resp.ok) {
-            const data = await resp.json();
-            bookedSlots = data.booked || [];
-            pendingSlots = data.pending || [];
-        } else {
-            slotsContainer.innerHTML = '<div class="status-message status-error">Failed to load slot availability. Please try again.</div>';
-            return;
-        }
-    } catch (e) {
-        slotsContainer.innerHTML = '<div class="status-message status-error">Network error. Please check your connection and try again.</div>';
-        return;
-    }
+    try {
+        const resp = await fetch('/faculty/booked_slots', { method: 'POST', body: formData });
+        if (resp.ok) {
+            const data = await resp.json();
+            bookedSlots = data.booked || [];
+            pendingSlots = data.pending || [];
+        } else {
+            slotsContainer.innerHTML = '<div class="status-message status-error">Failed to load slot availability. Please try again.</div>';
+            return;
+        }
+    } catch (e) {
+        slotsContainer.innerHTML = '<div class="status-message status-error">Network error. Please check your connection and try again.</div>';
+        return;
+    }
 
-    // Clear previous slots
-    slotsContainer.innerHTML = "";
-    let availableCount = 0;
+    // Clear previous slots
+    slotsContainer.innerHTML = "";
+    let availableCount = 0;
 
-    classSlots.forEach(slot => {
-        const isBooked = bookedSlots.includes(slot);
-        const isPending = pendingSlots.includes(slot);
-        const isUnavailable = isBooked || isPending; // Combined status for easier disabling
+    classSlots.forEach(slot => {
+        const isBooked = bookedSlots.includes(slot);
+        const isPending = pendingSlots.includes(slot);
+        const isUnavailable = isBooked || isPending; // Combined status for easier disabling
 
-        const slotContainer = document.createElement("div");
-        slotContainer.className = "slot-checkbox";
+        const slotContainer = document.createElement("div");
+        slotContainer.className = "slot-checkbox";
 
-        if (isBooked) slotContainer.classList.add("booked");
-        else if (isPending) slotContainer.classList.add("pending");
-        else slotContainer.classList.add("available");
+        if (isBooked) slotContainer.classList.add("booked");
+        else if (isPending) slotContainer.classList.add("pending");
+        else slotContainer.classList.add("available");
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = slot;
-        checkbox.id = `slot-${slot.replace(/[:\-]/g, '')}`;
-        checkbox.disabled = isUnavailable; // THIS correctly disables the checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = slot;
+        checkbox.id = `slot-${slot.replace(/[:\-]/g, '')}`;
+        checkbox.disabled = isUnavailable; // THIS correctly disables the checkbox
 
-        // Create an element for the text content
-        const slotText = document.createElement("span"); 
-        slotText.textContent = slot;
-        
-        // Use the span instead of <label> for better control inside the flex container
-        // If you must use <label>, then change slotText back to label, but the logic below is the key fix
+        // Create an element for the text content
+        const slotText = document.createElement("span"); 
+        slotText.textContent = slot;
+        
+        // Use the span instead of <label> for better control inside the flex container
+        // If you must use <label>, then change slotText back to label, but the logic below is the key fix
 
-        if (isBooked) {
-            slotText.textContent += " (Booked)";
-            slotText.style.color = "var(--error)";
-            slotText.style.fontWeight = "600";
-        } else if (isPending) {
-            slotText.textContent += " (Pending)";
-            slotText.style.color = "var(--warning)";
-            slotText.style.fontWeight = "600";
-        } else {
-            slotText.style.color = "var(--success)";
-            slotText.style.fontWeight = "600";
-        }
+        if (isBooked) {
+            slotText.textContent += " (Booked)";
+            slotText.style.color = "var(--error)";
+            slotText.style.fontWeight = "600";
+        } else if (isPending) {
+            slotText.textContent += " (Pending)";
+            slotText.style.color = "var(--warning)";
+            slotText.style.fontWeight = "600";
+        } else {
+            slotText.style.color = "var(--success)";
+            slotText.style.fontWeight = "600";
+        }
 
-        slotContainer.appendChild(checkbox);
-        slotContainer.appendChild(slotText); // Append span element
+        slotContainer.appendChild(checkbox);
+        slotContainer.appendChild(slotText); // Append span element
 
-        // Only attach listeners to available slots
-        if (!isUnavailable) {
-            availableCount++;
+        // Only attach listeners to available slots
+        if (!isUnavailable) {
+            availableCount++;
 
-            // Add listener to the WHOLE container for better UX
-            slotContainer.addEventListener('click', (e) => {
-                // Prevent toggling if the click was already on the checkbox itself to avoid double-toggle
-                if (e.target !== checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                }
-                slotContainer.classList.toggle('selected', checkbox.checked);
-                updateSelectedSlots();
-            });
+            // Add listener to the WHOLE container for better UX
+            slotContainer.addEventListener('click', (e) => {
+                // Prevent toggling if the click was already on the checkbox itself to avoid double-toggle
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                slotContainer.classList.toggle('selected', checkbox.checked);
+                updateSelectedSlots();
+            });
 
-            // Add listener to the checkbox to handle direct clicks on it
-            checkbox.addEventListener("change", (e) => {
-                slotContainer.classList.toggle('selected', e.target.checked);
-                updateSelectedSlots();
-            });
-        } else {
-            // For disabled slots, add a visual indicator and prevent interaction
-            slotContainer.style.pointerEvents = 'none';
-            slotContainer.title = isBooked ? 'This slot is already booked' : 'This slot is pending approval';
-        }
+            // Add listener to the checkbox to handle direct clicks on it
+            checkbox.addEventListener("change", (e) => {
+                slotContainer.classList.toggle('selected', e.target.checked);
+                updateSelectedSlots();
+            });
+        } else {
+            // For disabled slots, add a visual indicator and prevent interaction
+            slotContainer.style.pointerEvents = 'none';
+            slotContainer.title = isBooked ? 'This slot is already booked' : 'This slot is pending approval';
+        }
 
-        slotsContainer.appendChild(slotContainer);
-    });
+        slotsContainer.appendChild(slotContainer);
+    });
 
-    if (availableCount === 0) {
-        slotsContainer.innerHTML = '<div class="status-message status-info">No available slots for the selected date. Please choose another date.</div>';
-    }
+    if (availableCount === 0) {
+        slotsContainer.innerHTML = '<div class="status-message status-info">No available slots for the selected date. Please choose another date.</div>';
+    }
 
-    // Reset selection
-    selectedSlots = [];
-    updateSelectedSlots();
+    // Reset selection
+    selectedSlots = [];
+    updateSelectedSlots();
 }
 venueSelect.addEventListener("change", loadSlots);
 
@@ -1033,6 +1033,7 @@ const monthNames = ["January","February","March","April","May","June","July","Au
 function pad2(n){ return n < 10 ? '0'+n : ''+n; }
 function formatDateYmd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
+// ------------------- MODIFIED FUNCTION -------------------
 function buildCalendarHeader(state){
     const header = document.createElement('div');
     header.className = 'calendar-header';
@@ -1047,6 +1048,14 @@ function buildCalendarHeader(state){
     next.className = 'cal-nav-next';
     next.onclick = () => { state.month++; if(state.month>11){ state.month=0; state.year++; } renderCalendar(state); };
 
+    // NEW LOGIC: Disable previous button if current month is being viewed
+    const currentMonthYear = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+    const displayedMonthYear = new Date(state.year, state.month, 1);
+    
+    if (displayedMonthYear <= currentMonthYear) {
+        prev.disabled = true;
+    }
+
     const title = document.createElement('div');
     title.className = 'cal-title';
     title.textContent = `${monthNames[state.month]} ${state.year}`;
@@ -1058,6 +1067,7 @@ function buildCalendarHeader(state){
     return header;
 }
 
+// ------------------- MODIFIED FUNCTION -------------------
 function buildCalendarGrid(state){
     const grid = document.createElement('div');
     grid.className = 'cal-grid';
@@ -1073,50 +1083,66 @@ function buildCalendarGrid(state){
 
     for(let i=0;i<startDow;i++){ const empty = document.createElement('div'); empty.className='cal-day empty'; grid.appendChild(empty); }
 
-    const todayYmd = formatDateYmd(new Date());
+    const todayYmd = formatDateYmd(todayDate); // Use the new todayDate variable
     for(let d=1;d<=daysInMonth;d++){
         const cell = document.createElement('button');
         cell.className='cal-day'; cell.textContent=d;
+        
         const thisDate = new Date(state.year, state.month, d);
         const ymd = formatDateYmd(thisDate);
+        
+        // NEW LOGIC: Disable past dates
+        const isPastDate = thisDate < todayDate;
+
+        if (isPastDate) {
+            cell.disabled = true;
+            cell.title = "Past dates cannot be booked";
+        }
 
         if(ymd===todayYmd) cell.classList.add('today');
         if(selectedDate===ymd) cell.classList.add('selected');
 
-        cell.onclick=()=>{
-            selectedDate=ymd;
-            formDate.value=ymd;
-            selectedDateLabel.textContent=`Selected date: ${ymd}`;
-            renderCalendar(state);
-            loadSlots();
-        };
+        // Only attach click handler if it's NOT a past date
+        if (!isPastDate) {
+            cell.onclick=()=>{
+                selectedDate=ymd;
+                formDate.value=ymd;
+                selectedDateLabel.textContent=`Selected date: ${ymd}`;
+                renderCalendar(state);
+                loadSlots();
+            };
+        }
 
         grid.appendChild(cell);
     }
     return grid;
 }
+// --------------------------------------------------------
 
 function renderCalendar(state){
-    calendarEl.innerHTML='';
-    calendarEl.appendChild(buildCalendarHeader(state));
-    calendarEl.appendChild(buildCalendarGrid(state));
+    calendarEl.innerHTML='';
+    calendarEl.appendChild(buildCalendarHeader(state));
+    calendarEl.appendChild(buildCalendarGrid(state));
 }
 
 // Initialize
 const now = new Date();
+// NEW GLOBAL VARIABLE: Set today's date at midnight for accurate comparison
+const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
 const calendarState = { year: now.getFullYear(), month: now.getMonth() };
 renderCalendar(calendarState);
 
-selectedDate = formatDateYmd(now);
+selectedDate = formatDateYmd(todayDate); // Initialize selected date to today, not a past date
 formDate.value = selectedDate;
 selectedDateLabel.textContent = `Selected date: ${selectedDate}`;
-  
+
 // Auto-select first venue
 if(venueSelect && venueSelect.options.length>1 && !venueSelect.value){
-    venueSelect.selectedIndex=1;
-    loadSlots();
+venueSelect.selectedIndex=1;
+loadSlots();
 }
 </script>
+
 
 
 </body>

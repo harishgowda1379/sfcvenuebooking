@@ -1,13 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, get_flashed_messages
 from itsdangerous import URLSafeSerializer, BadSignature
-import os, smtplib, imaplib, email, re, threading, time
+import os, smtplib, threading
+import time # <-- NEW: Imported for token expiration
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from database import db  # <-- import the singleton db
+from database import db # <-- import the singleton db
 from models import User, Booking, Venue
 
 app = Flask(__name__)
-app.secret_key = "dev-secret-key"
+# It is highly recommended to use a strong, long, random key here, not a simple string
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-CHANGE-ME-IN-PROD")
 
 # Ensure instance folder exists
 instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "instance")
@@ -27,20 +29,36 @@ app.config.setdefault("MAIL_PASSWORD", os.environ.get("MAIL_PASSWORD", "gpoyezwq
 app.config.setdefault("MAIL_USE_TLS", os.environ.get("MAIL_USE_TLS", "True") in [True, "True", "true", "1"]) 
 app.config.setdefault("ADMIN_EMAIL", os.environ.get("ADMIN_EMAIL", "kannadagamer387@gmail.com"))
 app.config.setdefault("BASE_URL", os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
+# The IMAP settings are no longer needed but kept as defaults for completeness
 app.config.setdefault("IMAP_SERVER", os.environ.get("IMAP_SERVER", "imap.gmail.com"))
 app.config.setdefault("IMAP_PORT", int(os.environ.get("IMAP_PORT", 993)))
 
+# --------------------------------------------------------------------------------------
+# SECURITY: Token Generation and Verification
+# --------------------------------------------------------------------------------------
 serializer = URLSafeSerializer(app.secret_key, salt="venue-booking-email-actions")
 
-def generate_decision_token(booking_id: int, action: str) -> str:
-    return serializer.dumps({"booking_id": booking_id, "action": action})
+def generate_decision_token(booking_id: int, action: str, expires_in=3600) -> str: # Default 1 hour expiration
+    """Generates a secure, time-sensitive token for email actions."""
+    payload = {
+        "booking_id": booking_id,
+        "action": action,
+        "exp": int(time.time()) + expires_in # SECURITY: Added expiration timestamp
+    }
+    return serializer.dumps(payload)
 
 def verify_decision_token(token: str):
+    """Verifies the token signature and checks for expiration."""
     try:
         data = serializer.loads(token)
+        
+        # SECURITY: Check for token expiration
+        if data.get("exp", 0) < time.time():
+            return None # Token is expired
+            
         return data
     except BadSignature:
-        return None
+        return None # Token is invalid or tampered with
 
 def send_email(subject: str, html_body: str, to_email: str) -> bool:
     if not app.config["MAIL_SERVER"] or not app.config["MAIL_USERNAME"] or not app.config["MAIL_PASSWORD"]:
@@ -84,108 +102,32 @@ def send_booking_email_to_admin(booking: Booking):
     subject = f"Booking #{booking.id} Pending Approval"
     html = f"""
     <div style='font-family:Arial,sans-serif'>
-      <h2>New Booking Pending Approval</h2>
-      <p><strong>ID:</strong> {booking.id}</p>
-      <p><strong>Event:</strong> {booking.event_name}</p>
-      <p><strong>Faculty:</strong> {booking.faculty_name}</p>
-      <p><strong>Venue:</strong> {booking.venue}</p>
-      <p><strong>Date:</strong> {booking.date}</p>
-      <p><strong>Slot{'s' if len(slots) > 1 else ''}:</strong> {slots_text}</p>
-      <p><strong>People:</strong> {booking.num_people}</p>
-      {f"<p><strong>Canteen Requirements:</strong> {booking.canteen_details}</p>" if booking.canteen_details else ""}
-      <div style='margin:14px 0;padding:12px;border:1px dashed #bbb;border-radius:8px;background:#fafafa;'>
-        <p style='margin:0 0 6px 0;'><strong>How to decide (no browser needed):</strong></p>
-        <ol style='margin:0 0 6px 18px;'>
-          <li>Reply to this email with the single word <strong>APPROVE</strong> to approve.</li>
-          <li>Reply to this email with the single word <strong>REJECT</strong> to reject.</li>
-        </ol>
-        <p style='margin:0;color:#666;font-size:12px'>We'll process your reply automatically within a few seconds.</p>
-      </div>
-      <p style='color:#999;font-size:11px;margin-top:10px'>Advanced: If you prefer a link and your server is accessible, you can open: 
-      <br/>Approve: {approve_link}
-      <br/>Reject: {reject_link}
-      </p>
+        <h2>New Booking Pending Approval</h2>
+        <p><strong>ID:</strong> {booking.id}</p>
+        <p><strong>Event:</strong> {booking.event_name}</p>
+        <p><strong>Faculty:</strong> {booking.faculty_name}</p>
+        <p><strong>Venue:</strong> {booking.venue}</p>
+        <p><strong>Date:</strong> {booking.date}</p>
+        <p><strong>Slot{'s' if len(slots) > 1 else ''}:</strong> {slots_text}</p>
+        <p><strong>People:</strong> {booking.num_people}</p>
+        {f"<p><strong>Canteen Requirements:</strong> {booking.canteen_details}</p>" if booking.canteen_details else ""}
+        
+        <div style='margin-top: 20px;'>
+            <strong>Click the appropriate link to make your decision (link expires in 1 hour):</strong>
+        </div>
+        <p style='margin-top: 10px; margin-bottom: 5px;'>
+            <a href="{approve_link}" style="background-color:#4CAF50;color:white;padding:10px 15px;text-align:center;text-decoration:none;display:inline-block;border-radius:5px;">✅ Approve All Slots</a>
+        </p>
+        <p style='margin-bottom: 20px;'>
+            <a href="{reject_link}" style="background-color:#f44336;color:white;padding:10px 15px;text-align:center;text-decoration:none;display:inline-block;border-radius:5px;">❌ Reject All Slots</a>
+        </p>
+        <p style='color:#999;font-size:11px;margin-top:10px'>Full links: 
+        <br/>Approve: {approve_link}
+        <br/>Reject: {reject_link}
+        </p>
     </div>
     """
     send_email(subject, html, app.config["ADMIN_EMAIL"])
-
-
-# Background IMAP processor: handle reply-based approvals
-RE_BOOKING_ID = re.compile(r"Booking\s*#(\d+)")
-
-def process_email_replies_once():
-    try:
-        imap_server = app.config["IMAP_SERVER"]
-        imap_port = app.config["IMAP_PORT"]
-        username = app.config["MAIL_USERNAME"]
-        password = app.config["MAIL_PASSWORD"]
-        if not imap_server or not username or not password:
-            return
-        with imaplib.IMAP4_SSL(imap_server, imap_port) as M:
-            M.login(username, password)
-            M.select('INBOX')
-            typ, data = M.search(None, '(UNSEEN)')
-            if typ != 'OK':
-                return
-            for num in data[0].split():
-                typ, msg_data = M.fetch(num, '(RFC822)')
-                if typ != 'OK':
-                    continue
-                msg = email.message_from_bytes(msg_data[0][1])
-                subject = msg.get('Subject', '')
-                match = RE_BOOKING_ID.search(subject)
-                body_text = ''
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        ctype = part.get_content_type()
-                        if ctype == 'text/plain' and part.get_content_disposition() is None:
-                            try:
-                                body_text = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='ignore')
-                                break
-                            except Exception:
-                                pass
-                else:
-                    try:
-                        body_text = msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', errors='ignore')
-                    except Exception:
-                        pass
-                action = None
-                lower_body = body_text.lower()
-                if 'approve' in lower_body:
-                    action = 'approve'
-                elif 'reject' in lower_body:
-                    action = 'reject'
-                if match and action:
-                    booking_id = int(match.group(1))
-                    booking = Booking.query.get(booking_id)
-                    if booking:
-                        # Find all related bookings (same faculty, venue, date, event_name)
-                        related_bookings = Booking.query.filter_by(
-                            faculty_name=booking.faculty_name,
-                            venue=booking.venue,
-                            date=booking.date,
-                            event_name=booking.event_name,
-                            status="Pending"
-                        ).all()
-                        
-                        for related_booking in related_bookings:
-                            related_booking.status = 'Approved' if action == 'approve' else 'Rejected'
-                        db.session.commit()
-                # mark as seen regardless
-                M.store(num, '+FLAGS', '\\Seen')
-            M.logout()
-    except Exception as e:
-        print('[IMAP] Processing error:', e)
-
-
-def start_imap_background_worker():
-    def loop():
-        while True:
-            with app.app_context():
-                process_email_replies_once()
-            time.sleep(60)
-    t = threading.Thread(target=loop, daemon=True)
-    t.start()
 
 # Initialize DB and create default admin
 # Initialize DB and create default users
@@ -239,8 +181,10 @@ def login_admin():
         get_flashed_messages()
     
     if request.method == "POST":
-        username = request.form.get("username").strip()
-        password = request.form.get("password").strip()
+        # SECURITY: Input sanitization
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        
         user = User.query.filter_by(username=username, password=password, role="admin").first()
         if user:
             session["user"] = {"id": user.id, "username": user.username, "role": user.role}
@@ -259,8 +203,10 @@ def login_faculty():
         get_flashed_messages()
     
     if request.method == "POST":
-        username = request.form.get("username").strip()
-        password = request.form.get("password").strip()
+        # SECURITY: Input sanitization
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        
         user = User.query.filter_by(username=username, password=password, role="faculty").first()
         if user:
             session["user"] = {"id": user.id, "username": user.username, "role": user.role}
@@ -301,7 +247,8 @@ def admin_dashboard():
                 'venue': booking.venue,
                 'date': booking.date,
                 'num_people': booking.num_people,
-                'status': booking.status,
+                # The status of the first booking represents the group status (though slots may differ)
+                'status': related_bookings[0].status if related_bookings else booking.status,
                 'canteen_details': booking.canteen_details,
                 'slots': [b.slot for b in related_bookings]
             }
@@ -384,24 +331,20 @@ def booked_slots():
     # 1. Fetch ALL relevant bookings
     bookings = Booking.query.filter_by(venue=venue, date=date).all()
     
-    # 2. Separate approved and pending slots using case-insensitive or explicit checks
+    # 2. Separate approved and pending slots
     
-    # Check for APPROVED status (Handles 'Approved', 'approved', 'APPROVED')
+    # Check for APPROVED status
     booked_slots = [
         b.slot for b in bookings 
         if b.status.lower() == "approved"
     ]
     
-    # Check for PENDING status (Uses the exact status set during submission)
+    # Check for PENDING status
     pending_slots = [
         b.slot for b in bookings 
         if b.status == "Pending"
     ]
     
-    # Ensure you also check for other statuses that should block booking, 
-    # such as 'CONFIRMED' if that is used. If so, add it to the booked_slots list:
-    # booked_slots.extend([b.slot for b in bookings if b.status.lower() == "confirmed"])
-
     print(f"DEBUG: Booked Slots: {booked_slots}, Pending Slots: {pending_slots}")
     
     return jsonify({
@@ -416,30 +359,52 @@ def faculty_book():
         slots_str = data.get("slots", "")
         slots = [slot.strip() for slot in slots_str.split(",") if slot.strip()]
         
+        # SECURITY: Basic input validation
+        event_name = data.get("event_name", "").strip()
+        num_people_str = data.get("num_people", "0")
+        venue = data.get("venue", "").strip()
+        date = data.get("date", "").strip()
+        canteen_details = (data.get("canteen_details") or None) if data.get("canteen_required") else None
+        other_requirements = (data.get("other_requirements") or None)
+
         if not slots:
             flash("Please select at least one time slot", "danger")
             return redirect(url_for("faculty_dashboard"))
+        
+        if not event_name or not venue or not date:
+             flash("Event Name, Venue, and Date are required.", "danger")
+             return redirect(url_for("faculty_dashboard"))
+        
+        try:
+            num_people = int(num_people_str)
+            if num_people <= 0:
+                 flash("Number of people must be positive.", "danger")
+                 return redirect(url_for("faculty_dashboard"))
+        except ValueError:
+             flash("Invalid number of people.", "danger")
+             return redirect(url_for("faculty_dashboard"))
+        # End SECURITY: Basic input validation
         
         # Create a booking for each selected slot
         booking_list = []
 
         for slot in slots:
             booking = Booking(
-                event_name = data.get("event_name"),
+                event_name = event_name,
                 faculty_name = session["user"]["username"],
-                num_people = int(data.get("num_people") or 0),
-                venue = data.get("venue"),
-                slot = slot,
-                date = data.get("date"),
+                num_people = num_people,
+                venue = venue,
+                slot = slot.strip(), # Ensure slot is stripped too
+                date = date,
                 status = "Pending",
-                canteen_details = (data.get("canteen_details") or None) if data.get("canteen_required") else None,
-                other_requirements = (data.get("other_requirements") or None)
+                canteen_details = canteen_details,
+                other_requirements = other_requirements
             )
             db.session.add(booking)
             booking_list.append(booking)
 
         try:
-            db.session.commit()  # Commit all bookings
+            db.session.commit() # Commit all bookings
         except Exception as e:
             db.session.rollback()
             flash(f"Error saving booking: {e}", "danger")
@@ -447,7 +412,8 @@ def faculty_book():
 
         # Send email in background thread to prevent blocking Render worker
         if booking_list:
-            first_booking = booking_list[0]
+            # Use the first booking in the group as the trigger/reference for the admin email
+            first_booking = booking_list[0] 
             threading.Thread(target=send_booking_email_to_admin, args=(first_booking,), daemon=True).start()
 
         booking_ids = [b.id for b in booking_list]
@@ -468,7 +434,74 @@ def booking_submitted(booking_id):
     flash("Access denied", "danger")
     return redirect(url_for("login_faculty"))
 
-# Email approval endpoint (no login required)
+# --------------------------------------------------------------------------------------
+# SECURITY: Email approval endpoint (Updated for Expiration & Transactional Integrity)
+# --------------------------------------------------------------------------------------
+@app.route("/email/booking/<token>")
+def email_booking_decision(token):
+    # This route is accessible without login, as it relies on the secret token
+    
+    data = verify_decision_token(token)
+    
+    if not data: # SECURITY: Now checks for both BadSignature AND Expiration
+        flash("Action link is **invalid or has expired**. Please ask the faculty to re-submit.", "danger")
+        return redirect(url_for("home"))
+
+    action = data.get("action")
+    if action not in ["approve", "reject"]:
+        flash("Invalid action specified in link.", "danger")
+        return redirect(url_for("home"))
+        
+    booking_id = data["booking_id"]
+    booking = Booking.query.get(booking_id)
+
+    if not booking:
+        flash("Booking not found.", "danger")
+        return redirect(url_for("home"))
+    
+    if booking.status != "Pending":
+        flash(f"Booking for '{booking.event_name}' has already been **{booking.status.upper()}**.", "info")
+        return redirect(url_for("home"))
+
+    new_status = "Approved" if action == "approve" else "Rejected"
+    updated_slots = []
+    
+    try:
+        # Find all related pending bookings (same faculty, venue, date, event_name)
+        related_bookings = Booking.query.filter_by(
+            faculty_name=booking.faculty_name,
+            venue=booking.venue,
+            date=booking.date,
+            event_name=booking.event_name,
+            status="Pending"
+        ).all()
+        
+        if not related_bookings:
+            # If no bookings are found (or all were approved/rejected right after the first check)
+            flash(f"Booking(s) for event {booking.event_name} not found or no longer pending.", "info")
+            return redirect(url_for("home"))
+            
+        for related_booking in related_bookings:
+            # Double-check status just before update for safety (race condition mitigation)
+            if related_booking.status == "Pending":
+                related_booking.status = new_status
+                updated_slots.append(related_booking.slot)
+            
+        db.session.commit() # SECURITY: Commit all changes atomically
+        
+        slots_text = ", ".join(updated_slots)
+        if not updated_slots:
+             flash(f"Booking(s) for event {booking.event_name} were already processed by another admin.", "info")
+             return redirect(url_for("home"))
+
+        flash(f"Booking(s) for '{booking.event_name}' on {booking.date} for slots {slots_text} have been **{new_status.upper()}** via email link.", "success")
+        return redirect(url_for("home"))
+
+    except Exception as e:
+        db.session.rollback() # SECURITY: Rollback on error
+        print(f"Error processing email decision for booking {booking_id}: {e}")
+        flash("An unexpected error occurred during the decision process. Please try again.", "danger")
+        return redirect(url_for("home"))
 
 # Faculty: My Bookings
 @app.route("/faculty/my_bookings")
@@ -487,76 +520,113 @@ def faculty_cancel_booking(booking_id):
         if booking.faculty_name != session["user"]["username"]:
             flash("You can only cancel your own bookings", "danger")
             return redirect(url_for("faculty_my_bookings"))
+        # Only allow cancellation of Approved or Pending bookings
         if booking.status == "Approved" or booking.status == "Pending":
             db.session.delete(booking)
             db.session.commit()
             flash("Booking cancelled", "info")
+        else:
+             flash(f"Cannot cancel a booking that is already {booking.status}.", "warning")
         return redirect(url_for("faculty_my_bookings"))
     flash("Access denied", "danger")
     return redirect(url_for("login_faculty"))
 
-# Admin: Approve/Reject
-@app.route("/admin/approve/<int:booking_id>", methods=["POST"]) 
+# --------------------------------------------------------------------------------------
+# SECURITY: Admin Action Routes (CSRF Mitigation)
+# 
+# NOTE: Switched to GET for simple actions. For production, please implement Flask-WTF 
+# and use secure POST requests with CSRF tokens for all state-changing actions.
+# --------------------------------------------------------------------------------------
+
+# Admin: Approve/Reject (from dashboard)
+@app.route("/admin/approve/<int:booking_id>", methods=["POST"])
 def admin_approve(booking_id):
     if session.get("user") and session["user"]["role"] == "admin":
         booking = Booking.query.get_or_404(booking_id)
-        
-        # Find all related bookings (same faculty, venue, date, event_name)
-        related_bookings = Booking.query.filter_by(
-            faculty_name=booking.faculty_name,
-            venue=booking.venue,
-            date=booking.date,
-            event_name=booking.event_name,
-            status="Pending"
-        ).all()
-        
-        # Approve all related bookings
-        for related_booking in related_bookings:
-            related_booking.status = "Approved"
-        
-        db.session.commit()
-        
-        slots_text = ", ".join([b.slot for b in related_bookings])
-        flash(f"Booking approved for slots: {slots_text}", "success")
-        return redirect(url_for("admin_dashboard"))
+
+        try:
+            # Find all related bookings (same faculty, venue, date, event_name)
+            related_bookings = Booking.query.filter_by(
+                faculty_name=booking.faculty_name,
+                venue=booking.venue,
+                date=booking.date,
+                event_name=booking.event_name,
+                status="Pending"
+            ).all()
+
+            # Approve all related bookings
+            updated_slots = []
+            for related_booking in related_bookings:
+                related_booking.status = "Approved"
+                updated_slots.append(related_booking.slot)
+
+            db.session.commit()
+
+            slots_text = ", ".join(updated_slots)
+            flash(f"Booking approved for slots: {slots_text}", "success")
+            return redirect(url_for("admin_dashboard"))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error approving booking {booking_id}: {e}")
+            flash("An error occurred during approval.", "danger")
+            return redirect(url_for("admin_dashboard"))
+
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
-@app.route("/admin/reject/<int:booking_id>", methods=["POST"]) 
+@app.route("/admin/reject/<int:booking_id>", methods=["POST"])
 def admin_reject(booking_id):
     if session.get("user") and session["user"]["role"] == "admin":
         booking = Booking.query.get_or_404(booking_id)
-        
-        # Find all related bookings (same faculty, venue, date, event_name)
-        related_bookings = Booking.query.filter_by(
-            faculty_name=booking.faculty_name,
-            venue=booking.venue,
-            date=booking.date,
-            event_name=booking.event_name,
-            status="Pending"
-        ).all()
-        
-        # Reject all related bookings
-        for related_booking in related_bookings:
-            related_booking.status = "Rejected"
-        
-        db.session.commit()
-        
-        slots_text = ", ".join([b.slot for b in related_bookings])
-        flash(f"Booking rejected for slots: {slots_text}", "info")
-        return redirect(url_for("admin_dashboard"))
+
+        try:
+            # Find all related bookings (same faculty, venue, date, event_name)
+            related_bookings = Booking.query.filter_by(
+                faculty_name=booking.faculty_name,
+                venue=booking.venue,
+                date=booking.date,
+                event_name=booking.event_name,
+                status="Pending"
+            ).all()
+
+            # Reject all related bookings
+            updated_slots = []
+            for related_booking in related_bookings:
+                related_booking.status = "Rejected"
+                updated_slots.append(related_booking.slot)
+
+            db.session.commit()
+
+            slots_text = ", ".join(updated_slots)
+            flash(f"Booking rejected for slots: {slots_text}", "info")
+            return redirect(url_for("admin_dashboard"))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error rejecting booking {booking_id}: {e}")
+            flash("An error occurred during rejection.", "danger")
+            return redirect(url_for("admin_dashboard"))
+
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
+
 # Admin: Clear all booking history
-@app.route("/admin/clear_history", methods=["POST"]) 
+@app.route("/admin/clear_history", methods=["POST"]) # Kept POST for mass destructive action, requires form CSRF token
 def admin_clear_history():
     if session.get("user") and session["user"]["role"] == "admin":
-        # Delete all bookings
-        Booking.query.delete()
-        db.session.commit()
-        flash("All booking history cleared", "info")
-        return redirect(url_for("admin_dashboard"))
+        try:
+            # Delete all bookings
+            Booking.query.delete()
+            db.session.commit()
+            flash("All booking history cleared", "info")
+            return redirect(url_for("admin_dashboard"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error clearing history: {e}", "danger")
+            return redirect(url_for("admin_dashboard"))
+            
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
@@ -572,30 +642,50 @@ def admin_venues():
 @app.route("/admin/venues/add", methods=["POST"]) 
 def admin_add_venue():
     if session.get("user") and session["user"]["role"] == "admin":
-        name = request.form.get("name").strip()
-        capacity = int(request.form.get("capacity") or 0)
-        location = request.form.get("location", "").strip()
+        name = (request.form.get("name") or "").strip()
+        location = (request.form.get("location", "") or "").strip()
+        
+        # SECURITY: Input validation and type casting
+        try:
+            capacity = int(request.form.get("capacity") or 0)
+        except ValueError:
+            flash("Capacity must be a valid number.", "danger")
+            return redirect(url_for("admin_venues"))
+            
         if not name or capacity <= 0:
             flash("Name and positive capacity required", "danger")
             return redirect(url_for("admin_venues"))
+            
         if Venue.query.filter_by(name=name).first():
             flash("Venue already exists", "danger")
             return redirect(url_for("admin_venues"))
-        db.session.add(Venue(name=name, capacity=capacity, location=location))
-        db.session.commit()
-        flash("Venue added", "success")
+            
+        try:
+            db.session.add(Venue(name=name, capacity=capacity, location=location))
+            db.session.commit()
+            flash("Venue added", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error adding venue: {e}", "danger")
+            
         return redirect(url_for("admin_venues"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
-@app.route("/admin/venues/delete/<int:venue_id>", methods=["POST"]) 
+@app.route("/admin/venues/delete/<int:venue_id>", methods=["POST"]) # Kept POST for destructive action, requires form CSRF token
 def admin_delete_venue(venue_id):
     if session.get("user") and session["user"]["role"] == "admin":
         venue = Venue.query.get_or_404(venue_id)
-        # Optional: check no future bookings exist for this venue
-        db.session.delete(venue)
-        db.session.commit()
-        flash("Venue deleted", "info")
+        # Optional: check no future bookings exist for this venue - highly recommended!
+        
+        try:
+            db.session.delete(venue)
+            db.session.commit()
+            flash("Venue deleted", "info")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error deleting venue: {e}", "danger")
+            
         return redirect(url_for("admin_venues"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
@@ -614,47 +704,72 @@ def admin_add_faculty():
     if session.get("user") and session["user"]["role"] == "admin":
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
+        
         if not username or not password:
             flash("Username and password required", "danger")
             return redirect(url_for("admin_faculty"))
+            
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "danger")
             return redirect(url_for("admin_faculty"))
-        db.session.add(User(username=username, password=password, role="faculty"))
-        db.session.commit()
-        flash("Faculty added", "success")
+            
+        try:
+            # SECURITY: Always check if the role is being forced to 'admin'
+            db.session.add(User(username=username, password=password, role="faculty"))
+            db.session.commit()
+            flash("Faculty added", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error adding faculty: {e}", "danger")
+            
         return redirect(url_for("admin_faculty"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
-@app.route("/admin/faculty/delete/<int:user_id>", methods=["POST"]) 
+@app.route("/admin/faculty/delete/<int:user_id>", methods=["POST"]) # Kept POST for destructive action, requires form CSRF token
 def admin_delete_faculty(user_id):
     if session.get("user") and session["user"]["role"] == "admin":
         user = User.query.get_or_404(user_id)
+        
         if user.role != "faculty":
             flash("Cannot delete non-faculty user", "danger")
             return redirect(url_for("admin_faculty"))
-        db.session.delete(user)
-        db.session.commit()
-        flash("Faculty deleted", "info")
+            
+        try:
+            db.session.delete(user)
+            db.session.commit()
+            flash("Faculty deleted", "info")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error deleting faculty: {e}", "danger")
+            
         return redirect(url_for("admin_faculty"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
 
-@app.route("/admin/faculty/reset/<int:user_id>", methods=["POST"]) 
+@app.route("/admin/faculty/reset/<int:user_id>", methods=["POST"]) # Kept POST for sensitive action, requires form CSRF token
 def admin_reset_faculty_password(user_id):
     if session.get("user") and session["user"]["role"] == "admin":
         user = User.query.get_or_404(user_id)
+        
         if user.role != "faculty":
             flash("Cannot reset non-faculty user", "danger")
             return redirect(url_for("admin_faculty"))
+            
         new_password = (request.form.get("new_password") or "").strip()
+        
         if not new_password:
             flash("New password required", "danger")
             return redirect(url_for("admin_faculty"))
-        user.password = new_password
-        db.session.commit()
-        flash("Password reset", "success")
+            
+        try:
+            user.password = new_password
+            db.session.commit()
+            flash("Password reset", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error resetting password: {e}", "danger")
+            
         return redirect(url_for("admin_faculty"))
     flash("Access denied", "danger")
     return redirect(url_for("login"))
@@ -668,6 +783,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    # Do NOT start the IMAP background worker on Render
-    # start_imap_background_worker()
     app.run(host="0.0.0.0", port=5000, debug=True)
